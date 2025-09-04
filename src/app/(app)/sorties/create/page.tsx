@@ -96,6 +96,8 @@ export default function CreateOutingPage() {
     });
 
     useEffect(() => {
+    // ✅ Protéger l’accès à searchParams (évite erreurs de build côté serveur)
+    if (!searchParams) return;
         const duplicateId = searchParams.get('duplicate');
         if (duplicateId) {
             // In a real app, you would fetch all past outings data
