@@ -11,8 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Users, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { outingCategories, sportSubCategories } from './data';
-import { useGetSorties, type Sortie } from '@/hooks/useSorties';
+import { type Sortie, sortiesData, outingCategories, sportSubCategories } from './data';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -122,49 +121,45 @@ export default function SortiesPage() {
   const [statuses, setStatuses] = useState<Record<string, RegistrationStatus>>({});
   const [participantCounts, setParticipantCounts] = useState<Record<string, number>>({});
 
-  const { data: fetchedSorties, isLoading, error } = useGetSorties();
-
   useEffect(() => {
     setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!fetchedSorties) return;
+    // Initialize participant counts from data
     const initialCounts: Record<string, number> = {};
-    fetchedSorties.forEach(s => { initialCounts[s.id] = s.participants; });
+    sortiesData.forEach(s => {
+      initialCounts[s.id] = s.participants;
+    });
     setParticipantCounts(initialCounts);
-  }, [fetchedSorties]);
+  }, []);
 
   const mainCategories = useMemo(() => outingCategories.filter(c => c !== 'Sport'), []);
 
-  const sorties = fetchedSorties ?? [];
   const filteredAndSortedSorties = useMemo(() => {
-    let list = fetchedSorties ? [...fetchedSorties] : [];
+    let sorties = [...sortiesData];
 
     if (themeFilter !== 'all') {
       if (themeFilter === 'Sport') {
-        list = list.filter(s => sportSubCategories.includes(s.theme));
+        sorties = sorties.filter(s => sportSubCategories.includes(s.theme));
       } else {
-        list = list.filter(s => s.theme === themeFilter);
+        sorties = sorties.filter(s => s.theme === themeFilter);
       }
     }
 
     switch (sortOption) {
       case 'date-newest':
-        list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        sorties.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         break;
       case 'date-oldest':
-        list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        sorties.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         break;
       case 'alphabetical':
-        list.sort((a, b) => a.title.localeCompare(b.title));
+        sorties.sort((a, b) => a.title.localeCompare(b.title));
         break;
       default:
         break;
     }
 
-    return list;
-  }, [themeFilter, sortOption, fetchedSorties]);
+    return sorties;
+  }, [themeFilter, sortOption]);
 
   const handleRegistration = (sortie: Sortie) => {
     const isFull = (participantCounts[sortie.id] ?? sortie.participants) >= sortie.maxParticipants;
@@ -274,13 +269,7 @@ export default function SortiesPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {isLoading && (
-              <div className="col-span-full text-center text-muted-foreground py-10">Chargement...</div>
-            )}
-            {error && (
-              <div className="col-span-full text-center text-destructive py-10">Erreur de chargement</div>
-            )}
-            {filteredAndSortedSorties.map((sortie: Sortie) => (
+            {filteredAndSortedSorties.map((sortie) => (
               <Card key={sortie.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="relative h-48 w-full">
                   <Image 
